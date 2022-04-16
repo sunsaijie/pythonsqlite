@@ -1,8 +1,11 @@
 import abc
 import re
 from src import field
+from src.engine import BasicDataBaesEngine,DataBaseEngine
 
 
+ENGINE = BasicDataBaesEngine
+DB_PATH = "./data"
 _BEHAVIERS = []
 
 def _add_behavier(cls):
@@ -44,10 +47,9 @@ class CreateTable(Behavier):
         origin_lines = ret.group(2).splitlines()
         strip_lines = map(lambda x: x.strip(), origin_lines)
         non_blank_lines = filter(lambda x: x, strip_lines)
-        print(tb_name)
-        for i in non_blank_lines:
-            a = field.transfor_to_field(i)
-            print(a)
+        fields = [field.transfor_to_field(x) for x in non_blank_lines]
+        engine = ENGINE(DB_PATH)
+        engine.create(tb_name, fields)
 
 
 def explain_sql(sql):
