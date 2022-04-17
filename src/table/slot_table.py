@@ -213,7 +213,7 @@ class SlotTable(DataTableInterface):
                 # 如果已经被删除，则直接跳过
                 if record_line_no in delete_ids:
                     record_line_no += 1
-                    fp.seek(self.line_bit)
+                    fp.seek(self.line_bit, 1)
                     continue
                 line_binary = fp.read(self.line_bit)
 
