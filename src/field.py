@@ -1,6 +1,7 @@
 import os
 import abc
 import re
+import struct
 
 
 _FIELDS = []
@@ -36,6 +37,19 @@ class Field(abc.ABC):
     def name(self):
         return self._name
 
+    @property
+    def bit(self):
+        return self._bit
+        # 20200014764454
+
+    @abc.abstractmethod
+    def binarizate(self, value):
+        pass
+
+    @abc.abstractmethod
+    def debinarizate(self, value):
+        pass
+
 @_add_fields
 class VarCharField(Field):
     @classmethod
@@ -59,6 +73,14 @@ class VarCharField(Field):
     def read_from_db(self, value):
         return str(value)
 
+    def binarizate(self, value):
+        encode_value = value.encode('utf-8')
+        return struct.pack("<{}s".format(self._bit), encode_value)
+
+    def debinarizate(self, value):
+        binary_pack = struct.unpack("<{}s".format(self._bit), value)[0]
+        return binary_pack.decode('utf-8').replace("\x00", "")
+
 
 @_add_fields
 class IntField(Field):
@@ -69,7 +91,7 @@ class IntField(Field):
             return False
         name = ret.group(1)
         bit = ret.group(2)
-        return cls(name, bit)
+        return cls(name, 1)
     
     def to_sql(self):
         return f"{self._name} int{self._bit}"
@@ -80,7 +102,13 @@ class IntField(Field):
     
     def read_from_db(self, value):
         return int(value)
-    
+
+    def binarizate(self, value):
+        return struct.pack("<B", value)
+
+    def debinarizate(self, value):
+        return struct.unpack("<B", value)[0]
+
 
 @_add_fields
 class BoolField(Field):
@@ -104,6 +132,12 @@ class BoolField(Field):
         if value in [0, "0"]:
             return False
         return True
+
+    def binarizate(self, value):
+        return struct.pack("<B", value)
+
+    def debinarizate(self, value):
+        return struct.unpack("<B", value)[0]
 
 def transfor_to_field(sql):
     for field_parser in _FIELDS:

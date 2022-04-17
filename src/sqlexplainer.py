@@ -1,11 +1,13 @@
 import abc
 import re
+import os
 from src import field
 from src.engine import BasicDataBaesEngine,DataBaseEngine
+from src import config
 
 
 ENGINE = BasicDataBaesEngine
-DB_PATH = "./data"
+DB_PATH = os.path.join(config.PROJECT_ROOT, 'data')
 _BEHAVIERS = []
 
 def _add_behavier(cls):
