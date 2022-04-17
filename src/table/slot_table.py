@@ -55,7 +55,7 @@ class SlotTable(DataTableInterface):
 
         data_path = os.path.join(self._tb_path, "data")
 
-        with open(data_path, 'wb') as fp:
+        with open(data_path, 'ab') as fp:
             fp.seek(cursor, 0)
             fp.write(content)
 
@@ -130,8 +130,60 @@ class SlotTable(DataTableInterface):
         return result
 
     def update(self, update=None, where=None):
+        if not update or not where:
+            return
         query_set = self._query(**where)
-        
+
+        # 原来的行标记删除
+        delete_idx = [x[0] for x in query_set]
+        slot_path = os.path.join(self._tb_path, "slot")
+        with open(slot_path, 'a') as fp:
+            for slot in delete_idx:
+                fp.write("{}:D\n".format(slot))
+
+        # 现在的行进行修改
+
+        # 获取要更新的udpate_table,和query_table一样
+        update_table = []
+        for field in self._fields:
+            if field.name in update:
+                value = update.get(field.name)
+                update_table.append((field.bit, value))
+            else:
+                update_table.append((-field.bit, None))
+
+        # 每一行进行替换
+        update_lines = []
+        for _, line in query_set:
+            line_cursor = 0
+            update_line = b''
+            for field_idx, (bit, value) in enumerate(update_table):
+                if bit > 0:
+                    update_line += self._fields[field_idx].binarizate(value)
+                    line_cursor += bit
+                else:
+                    update_line += line[line_cursor: line_cursor + (-bit)]
+                    line_cursor += (-bit)
+            update_lines.append(update_line)
+
+        cur_index = self._get_cursor()
+        # 添加到数据库中
+        data = os.path.join(self._tb_path, 'data')
+        with open(data, 'ab') as fp:
+            fp.seek(cur_index, 0)
+            for line in update_lines:
+                fp.write(line)
+
+        # 添加到数据库中：
+        last_index = cur_index  + len(update_lines) * self.line_bit
+        start_line_no = cur_index // self.line_bit
+        end_line_no = last_index // self.line_bit
+
+        with open(slot_path, 'a') as fp:
+            for line_no in range(start_line_no, end_line_no):
+                fp.write(f"{line_no}:V\n")
+
+        self._set_cursor(last_index)
 
     def _query(self, **kwargs):
         """根据条件查询满足条件的列表，

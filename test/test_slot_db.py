@@ -37,6 +37,11 @@ class TestSlotTable(unittest.TestCase):
 
     def test_query(self):
         a = engine.SlotDataBaseEngine(sqlexplainer.DB_PATH)
-        a.query(personal, age=35)
+        a.query(personal, age=36)
+
+    def test_update(self):
+        a = engine.SlotDataBaseEngine(sqlexplainer.DB_PATH)
+        a.update(personal, where={"age":36}, update={"name": "sunsaijie"})
+
 
 

@@ -86,8 +86,11 @@ class SlotDataBaseEngine(BasicDataBaesEngine):
 
     def query(self, table_name: str, **kwargs):
         tb_model = slot_table.SlotTable.loading_model(table_name, self._db_root)
+        index = 0
         for line in tb_model.query(**kwargs):
+            index += 1
             print(line)
+        print(f"一共有{index}个")
 
     def update(self, table_name: str, update=None, where=None):
         tb_model = slot_table.SlotTable.loading_model(table_name, self._db_root)
